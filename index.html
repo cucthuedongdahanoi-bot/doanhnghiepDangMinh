@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Danh sách Doanh Nghiệp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader { border-top-color: #3b82f6; animation: spinner 1s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        th {
+            position: sticky;
+            top: 0;
+            background-color: #f9fafb;
+            z-index: 10;
+        }
+
+        input[type="checkbox"] {
+            width: 1.05rem;
+            height: 1.05rem;
+            cursor: pointer;
+            accent-color: #2563eb;
+            flex-shrink: 0;
+        }
+
+        .table-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+        .table-scroll::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .table-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .selected-row {
+            background: #eff6ff !important;
+            box-shadow: inset 4px 0 0 #2563eb;
+        }
+
+        .status-note {
+            font-size: 11px;
+            line-height: 1.2;
+            color: #475569;
+            text-align: left;
+        }
+
+        .mail-preview-box {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .metric-card.active {
+            border-color: #2563eb !important;
+            box-shadow: 0 0 0 2px rgba(37,99,235,.12);
+            background: #eff6ff !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <div class="bg-blue-600 text-white shadow-md border-b-4 border-yellow-400">
+        <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <h1 class="text-xl font-bold mb-3 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a2 2 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                Thông Tin Nhận Thanh Toán
+            </h1>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm bg-blue-800/40 p-5 rounded-xl border border-blue-500/30 shadow-inner">
+                <div>
+                    <span class="text-blue-200 block text-xs uppercase font-medium tracking-wider mb-1">Mã tài khoản</span>
+                    <span class="font-bold text-xl font-mono text-yellow-300 drop-shadow-sm">D01T066056</span>
+                </div>
+                <div>
+                    <span class="text-blue-200 block text-xs uppercase font-medium tracking-wider mb-1">Ngân hàng</span>
+                    <span class="font-semibold text-lg text-white">Vietcombank</span>
+                </div>
+                <div>
+                    <span class="text-blue-200 block text-xs uppercase font-medium tracking-wider mb-1">Số tài khoản</span>
+                    <span class="font-semibold text-lg font-mono text-white">012345678910</span>
+                </div>
+                <div>
+                    <span class="text-blue-200 block text-xs uppercase font-medium tracking-wider mb-1">Chủ tài khoản</span>
+                    <span class="font-semibold text-lg text-white">NGUYEN VAN A</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[95%] mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+                Danh sách Thông Tin Doanh Nghiệp
+            </h2>
+
+            <div class="relative w-full md:w-80">
+                <input
+                    type="text"
+                    id="searchInput"
+                    onkeyup="applyFilters()"
+                    placeholder="Tìm tên, MST, ghi chú, notes..."
+                    class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm text-sm transition-all"
+                />
+                <svg class="w-5 h-5 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </div>
+        </div>
+
+        <div id="summaryCards" class="hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-6"></div>
+
+        <div id="loading" class="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm border border-gray-200">
+            <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4"></div>
+            <p class="text-gray-500 font-medium">Đang đồng bộ dữ liệu qua API...</p>
+        </div>
+
+        <div id="tableContainer" class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden hidden">
+            <div class="overflow-x-auto h-[60vh] table-scroll">
+                <table class="min-w-full divide-y divide-gray-200" id="dataTable">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3.5 text-center text-xs font-bold text-gray-600 uppercase tracking-wider w-16 border-r border-gray-200">STT</th>
+                            <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider min-w-[140px] border-r border-gray-200">Mã DN / MST</th>
+                            <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider min-w-[260px] border-r border-gray-200">Tên Doanh Nghiệp</th>
+                            <th class="px-4 py-3.5 text-left text-xs font-bold text-gray-600 uppercase tracking-wider min-w-[200px] border-r border-gray-200">Ghi chú</th>
+                            <th class="px-3 py-3.5 text-center text-xs font-bold text-blue-700 uppercase tracking-wider bg-blue-50/80 border-r border-gray-200 min-w-[150px]">Đã Liên Hệ</th>
+                            <th class="px-3 py-3.5 text-center text-xs font-bold text-rose-700 uppercase tracking-wider bg-rose-50/80 border-r border-gray-200 min-w-[160px]">Chưa Liên Hệ Được</th>
+                            <th class="px-3 py-3.5 text-center text-xs font-bold text-purple-700 uppercase tracking-wider bg-purple-50/80 border-r border-gray-200 min-w-[150px]">Đã Điền</th>
+                            <th class="px-3 py-3.5 text-center text-xs font-bold text-emerald-700 uppercase tracking-wider bg-emerald-50/80 min-w-[150px]">Đã Check</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="detailPanel" class="hidden mt-6 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                        <p class="text-xs uppercase tracking-wider text-blue-700 font-bold">Doanh nghiệp đang xem</p>
+                        <h3 id="detailTitle" class="text-xl font-bold text-gray-900 mt-1">--</h3>
+                        <p id="detailSubtitle" class="text-sm text-gray-600 mt-1">--</p>
+                    </div>
+                    <div class="text-sm text-gray-500">
+                        Bạn vẫn có thể tiếp tục check doanh nghiệp khác ở bảng phía trên.
+                    </div>
+                </div>
+            </div>
+            <div id="detailBody" class="p-5"></div>
+        </div>
+
+        <div id="toastStatus" class="fixed bottom-6 right-6 bg-gray-900 text-white px-5 py-3 rounded-lg shadow-xl text-sm font-medium transition-all duration-300 opacity-0 pointer-events-none z-50 transform translate-y-2 flex items-center gap-2 border border-gray-700">
+            <span id="toastIcon"></span>
+            <span id="toastText">Đang lưu...</span>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbwDDfx4farTy91kFumUR3v1f1digvXk1UdtcAFgwyXl0O1ms_UMHP6QT7-0iANpkNOZsw/exec";
+        const TOTAL_ENTERPRISES = 60;
+
+        let allData = [];
+        let filteredData = [];
+        let currentSelectedRowIndex = null;
+        let activeMetricFilter = "all";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchData();
+        });
+
+        async function fetchData() {
+            try {
+                const response = await fetch(API_URL + "?action=getAllData");
+                const result = await response.json();
+                if (result.error) {
+                    showError(result.error);
+                    return;
+                }
+                allData = result.data || [];
+                hydrateDefaults();
+                if (allData.length && currentSelectedRowIndex === null) {
+                    currentSelectedRowIndex = allData[0].rowIndex ?? 3;
+                }
+                document.getElementById("loading").classList.add("hidden");
+                document.getElementById("tableContainer").classList.remove("hidden");
+                document.getElementById("summaryCards").classList.remove("hidden");
+                applyFilters();
+            } catch (error) {
+                showError(error.message + " <br><span class='text-sm text-gray-500 font-normal mt-2 block'>Lưu ý: Bạn phải thiết lập Quyền truy cập API là 'Bất kỳ ai (Anyone)' trên Google Apps Script.</span>");
+            }
+        }
+
+        function hydrateDefaults() {
+            allData = allData.map((item) => {
+                const hydrated = { ...item };
+                if (hydrated.daLienHe === "" || hydrated.daLienHe === null || hydrated.daLienHe === undefined) hydrated.daLienHe = false;
+                if (hydrated.chuaLienHeDuoc === "" || hydrated.chuaLienHeDuoc === null || hydrated.chuaLienHeDuoc === undefined) hydrated.chuaLienHeDuoc = true;
+                if (hydrated.daLienHe) hydrated.chuaLienHeDuoc = false;
+                if (hydrated.daDien === "" || hydrated.daDien === null || hydrated.daDien === undefined) hydrated.daDien = false;
+                if (hydrated.daCheck === "" || hydrated.daCheck === null || hydrated.daCheck === undefined) hydrated.daCheck = false;
+                return hydrated;
+            });
+        }
+
+        function coerceBool(value) {
+            if (typeof value === "boolean") return value;
+            const text = String(value ?? "").trim().toLowerCase();
+            return ["true", "1", "yes", "x", "checked"].includes(text);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function escapeJsString(value) {
+            return String(value ?? "")
+                .replace(/\\/g, "\\\\")
+                .replace(/'/g, "\\'")
+                .replace(/\r/g, "\\r")
+                .replace(/\n/g, "\\n");
+        }
+
+        function nl2br(value) {
+            return escapeHtml(value).replace(/\n/g, "<br>");
+        }
+
+        function normalizePhone(value) {
+            if (value === null || value === undefined) return "";
+            let text = String(value).trim();
+            if (!text) return "";
+            if (/^\d+\.0$/.test(text)) text = text.replace(/\.0$/, "");
+            return text;
+        }
+
+        function getValue(item, keys, fallback = "—") {
+            for (const key of keys) {
+                const val = item?.[key];
+                if (val !== undefined && val !== null && String(val).trim() !== "") return String(val).trim();
+            }
+            return fallback;
+        }
+
+        function getPhoneValue(item, keys, fallback = "—") {
+            for (const key of keys) {
+                const val = item?.[key];
+                const phone = normalizePhone(val);
+                if (phone) return phone;
+            }
+            return fallback;
+        }
+
+        function copyButton(text, label) {
+            return `
+                <button
+                    type="button"
+                    onclick="copyText('${escapeJsString(text)}', '${escapeJsString(label)}')"
+                    class="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 transition-colors"
+                >
+                    Copy
+                </button>
+            `;
+        }
+
+        function renderActionButton(label, value) {
+            const finalValue = value && value !== "—" ? value : "";
+            if (!finalValue) return "";
+            return `
+                <button
+                    type="button"
+                    onclick="copyText('${escapeJsString(finalValue)}', '${escapeJsString(label)}')"
+                    class="px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    Copy ${escapeHtml(label)}
+                </button>
+            `;
+        }
+
+        function renderField(label, value, fullWidth = false) {
+            const finalValue = value && value !== "—" ? value : "Chưa có";
+            return `
+                <div class="${fullWidth ? "md:col-span-2 lg:col-span-3" : ""} bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">${label}</div>
+                        ${finalValue !== "Chưa có" ? copyButton(finalValue, label) : ""}
+                    </div>
+                    <div class="text-sm text-gray-900 break-words whitespace-pre-wrap">${escapeHtml(finalValue)}</div>
+                </div>
+            `;
+        }
+
+        function buildMailSubject(tenDN, mst) {
+            return `[TK 2026] Công văn hướng dẫn kê khai báo cáo tài chính năm 2026 - ${tenDN}${mst && mst !== "—" ? ` - MST ${mst}` : ""}`;
+        }
+
+        function buildMailBody(item) {
+            const tenDN = getValue(item, ["tenDN", "Tên doanh nghiệp", "tenDoanhNghiep"], "Quý doanh nghiệp");
+            const diaChi = getValue(item, ["diaChi", "Địa chỉ"], "");
+            const email = getValue(item, ["email", "Email"], "");
+            const mst = getValue(item, ["mst", "Mã số thuế", "maSoThue"], "");
+
+            const thongTinThem = [
+                mst && mst !== "—" ? `Mã số thuế: ${mst}` : "",
+                diaChi && diaChi !== "—" ? `Địa chỉ: ${diaChi}` : "",
+                email && email !== "—" ? `Email: ${email}` : ""
+            ].filter(Boolean).join("\n");
+
+            return `Kính gửi ${tenDN},
+
+Chào anh/chị, tôi tên là Nguyễn Đăng Minh, hiện đang công tác tại bộ phận Thống kê Kinh tế TP Hà Nội. Tôi xin gửi đến quý doanh nghiệp công văn hướng dẫn chi tiết về việc kê khai báo cáo tài chính năm 2026.
+
+Thực hiện Quyết định số 2837/QĐ-BTC ngày 1/8/2025 của Bộ trưởng Bộ Tài chính về việc tổ chức Tổng điều tra kinh tế năm 2026; Kế hoạch số 390/KH-UBND ngày 31/12/2025 của UBND thành phố Hà Nội về Tổng điều tra kinh tế năm 2026 trên địa bàn Thành phố; Thông báo số 5531/TB-HAN-NVDTPC ngày 27/02/2026 của Cục Thuế Thành phố Hà Nội về việc nộp Báo cáo Tổng điều tra kinh tế năm 2026.
+
+Trong quá trình kê khai, nếu có bất kỳ vướng mắc nào, quý doanh nghiệp vui lòng liên hệ với tôi qua Zalo (Minh) hoặc số điện thoại 0819482550 để được hỗ trợ kịp thời.
+
+Lưu ý khi kê khai:
+Bước 1: Truy cập vào Trang thông tin điện tử: https://tdktinhte2026.nso.gov.vn/
+- Tài khoản đăng nhập: Mã số thuế của doanh nghiệp
+- Mật khẩu truy cập: Mã số thuế của doanh nghiệp
+Bước 2: Doanh nghiệp kê khai trực tuyến phiếu thu thập thông tin, xác nhận hoàn thành và gửi phiếu cùng báo cáo tài chính năm 2025 trên hệ thống.
+
+LƯU Ý QUAN TRỌNG VỀ CHẾ TÀI XỬ PHẠT: Căn cứ Điều 32, 33 Luật Thống kê 2015 và Nghị định số 95/2016/NĐ-CP (được sửa đổi, bổ sung bởi Nghị định 37/2022/NĐ-CP) của Chính phủ quy định về xử phạt vi phạm hành chính trong lĩnh vực thống kê: Các đơn vị có hành vi vi phạm (như chậm nộp, không kê khai hoặc kê khai sai sự thật) sẽ bị xử phạt vi phạm hành chính với mức phạt từ 5.000.000 đồng đến 30.000.000 đồng tùy theo từng hành vi.
+
+Hạn cuối để gửi báo cáo là ngày 10/04/2026.
+
+Chân thành cảm ơn sự hợp tác của quý doanh nghiệp. Nếu có bất kỳ câu hỏi nào, quý doanh nghiệp vui lòng phản hồi email này hoặc qua các liên hệ phía trên.
+
+Trân trọng,
+
+Nguyễn Đăng Minh.${thongTinThem ? `
+
+---
+Thông tin doanh nghiệp
+${thongTinThem}` : ""}`;
+        }
+
+        function buildFullEmailText(subject, body, toEmail = "") {
+            return `To: ${toEmail || "(chưa có email)"}\nSubject: ${subject}\n\n${body}`;
+        }
+
+        function renderMailButtons(subject, body, email) {
+            const safeSubject = encodeURIComponent(subject);
+            const safeBody = encodeURIComponent(body);
+            const safeEmail = email && email !== "Chưa có" && email !== "—" ? email : "";
+
+            return `
+                <div class="flex flex-wrap gap-2">
+                    ${renderActionButton("Subject mail", subject)}
+                    ${renderActionButton("Body mail", body)}
+                    ${renderActionButton("Full mail", buildFullEmailText(subject, body, safeEmail))}
+                    ${safeEmail ? `
+                        <a
+                            href="mailto:${encodeURIComponent(safeEmail)}?subject=${safeSubject}&body=${safeBody}"
+                            class="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                        >
+                            Mở email nhanh
+                        </a>
+                    ` : ""}
+                </div>
+            `;
+        }
+
+        function metricCount(key) {
+            return allData.filter(item => !!item[key]).length;
+        }
+
+        function renderSummaryCards() {
+            const cards = [
+                { key: "all", label: "Tổng doanh nghiệp", count: allData.length, target: TOTAL_ENTERPRISES, color: "slate" },
+                { key: "daLienHe", label: "Đã liên hệ", count: metricCount("daLienHe"), target: TOTAL_ENTERPRISES, color: "blue" },
+                { key: "chuaLienHeDuoc", label: "Chưa liên hệ được", count: metricCount("chuaLienHeDuoc"), target: TOTAL_ENTERPRISES, color: "rose" },
+                { key: "daDien", label: "Đã điền", count: metricCount("daDien"), target: TOTAL_ENTERPRISES, color: "purple" },
+                { key: "daCheck", label: "Đã check", count: metricCount("daCheck"), target: TOTAL_ENTERPRISES, color: "emerald" }
+            ];
+
+            const palette = {
+                slate: "from-slate-50 to-white border-slate-200 text-slate-700",
+                blue: "from-blue-50 to-white border-blue-200 text-blue-700",
+                rose: "from-rose-50 to-white border-rose-200 text-rose-700",
+                purple: "from-purple-50 to-white border-purple-200 text-purple-700",
+                emerald: "from-emerald-50 to-white border-emerald-200 text-emerald-700"
+            };
+
+            document.getElementById("summaryCards").innerHTML = cards.map(card => `
+                <button
+                    type="button"
+                    onclick="toggleMetricFilter('${card.key}')"
+                    class="metric-card text-left rounded-xl border p-4 bg-gradient-to-br ${palette[card.color]} transition-all hover:shadow-sm ${activeMetricFilter === card.key ? 'active' : ''}"
+                >
+                    <div class="text-xs uppercase tracking-wider font-bold">${escapeHtml(card.label)}</div>
+                    <div class="mt-2 text-2xl font-bold">${card.count}<span class="text-sm font-medium text-gray-500">/${card.target}</span></div>
+                    <div class="mt-1 text-xs text-gray-500">Bấm để lọc danh sách</div>
+                </button>
+            `).join("");
+        }
+
+        function toggleMetricFilter(key) {
+            activeMetricFilter = activeMetricFilter === key ? "all" : key;
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const input = document.getElementById("searchInput").value.toLowerCase().trim();
+
+            filteredData = allData.filter(item => {
+                const mst = getValue(item, ["mst", "Mã số thuế", "maSoThue"], "").toLowerCase();
+                const name = getValue(item, ["tenDN", "Tên doanh nghiệp", "tenDoanhNghiep"], "").toLowerCase();
+                const note = getValue(item, ["ghiChu", "Ghi chú", "ghiChuThem"], "").toLowerCase();
+                const notesRieng = getValue(item, ["notes", "Notes", "noteRieng"], "").toLowerCase();
+
+                const matchKeyword = !input || mst.includes(input) || name.includes(input) || note.includes(input) || notesRieng.includes(input);
+
+                let matchMetric = true;
+                if (activeMetricFilter !== "all") {
+                    matchMetric = !!item[activeMetricFilter];
+                }
+                return matchKeyword && matchMetric;
+            });
+
+            renderSummaryCards();
+            renderTableBody();
+            ensureValidSelection();
+            renderDetailPanel();
+        }
+
+        function renderStatusCell(item, type, checked, noteText, bgClass, disabled = false) {
+            return `
+                <td class="px-3 py-3 align-middle ${bgClass} border-r border-gray-100" onclick="event.stopPropagation()">
+                    <label class="flex items-center justify-center gap-2 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            ${checked ? "checked" : ""}
+                            ${disabled ? "disabled" : ""}
+                            onchange="handleCheck(this, ${item.rowIndex}, '${type}')"
+                        >
+                        <span class="status-note">${escapeHtml(noteText)}</span>
+                    </label>
+                </td>
+            `;
+        }
+
+        function renderTableBody() {
+            const tbody = document.getElementById("tableBody");
+
+            if (!filteredData.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="px-4 py-8 text-center text-gray-500">Không có doanh nghiệp phù hợp với bộ lọc hiện tại.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map((item) => {
+                const mst = getValue(item, ["mst", "Mã số thuế", "maSoThue"]);
+                const tenDN = getValue(item, ["tenDN", "Tên doanh nghiệp", "tenDoanhNghiep"]);
+                const ghiChu = getValue(item, ["ghiChu", "Ghi chú", "ghiChuThem"], "");
+                const notes = getValue(item, ["notes", "Notes", "noteRieng"], "");
+                const daLienHe = coerceBool(item.daLienHe);
+                const chuaLienHeDuoc = coerceBool(item.chuaLienHeDuoc);
+                const daDien = coerceBool(item.daDien);
+                const daCheck = coerceBool(item.daCheck);
+                const isSelected = Number(item.rowIndex) === Number(currentSelectedRowIndex);
+
+                return `
+                    <tr
+                        data-row-index="${item.rowIndex}"
+                        onclick="selectEnterprise(${item.rowIndex})"
+                        class="hover:bg-blue-50/30 transition-colors row-item group cursor-pointer ${isSelected ? "selected-row" : ""}"
+                    >
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500 text-center border-r border-gray-100">${escapeHtml(item.stt ?? item.STT ?? "")}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-gray-700 border-r border-gray-100">${escapeHtml(mst)}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 border-r border-gray-100">
+                            <div>${escapeHtml(tenDN)}</div>
+                            ${notes && notes !== "—" ? `<div class="mt-1 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-800">Có notes riêng</div>` : ""}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-600 border-r border-gray-100">${ghiChu ? nl2br(ghiChu) : '<span class="text-gray-400 italic">Không có</span>'}</td>
+
+                        ${renderStatusCell(item, 'lienHe', daLienHe, 'Đã gọi / mail', 'bg-blue-50/10')}
+                        ${renderStatusCell(item, 'chuaLienHeDuoc', chuaLienHeDuoc, 'Mặc định bật', 'bg-rose-50/10', daLienHe)}
+                        ${renderStatusCell(item, 'dien', daDien, 'DN đã kê khai', 'bg-purple-50/10')}
+                        ${renderStatusCell(item, 'check', daCheck, 'Đã kiểm tra', 'bg-emerald-50/10', false).replace('border-r border-gray-100','')}
+                    </tr>
+                `;
+            }).join("");
+
+            updateSelectedRowUI();
+        }
+
+        function selectEnterprise(rowIndex) {
+            currentSelectedRowIndex = Number(rowIndex);
+            updateSelectedRowUI();
+            renderDetailPanel();
+        }
+
+        function updateSelectedRowUI() {
+            document.querySelectorAll("#tableBody tr[data-row-index]").forEach((row) => {
+                const rowIndex = Number(row.dataset.rowIndex);
+                row.classList.toggle("selected-row", rowIndex === Number(currentSelectedRowIndex));
+            });
+        }
+
+        function ensureValidSelection() {
+            if (!filteredData.length) {
+                currentSelectedRowIndex = null;
+                return;
+            }
+            const exists = filteredData.some(item => Number(item.rowIndex) === Number(currentSelectedRowIndex));
+            if (!exists) currentSelectedRowIndex = Number(filteredData[0].rowIndex);
+        }
+
+        function getSelectedItem() {
+            return allData.find(item => Number(item.rowIndex) === Number(currentSelectedRowIndex)) || null;
+        }
+
+        function renderDetailPanel() {
+            const panel = document.getElementById("detailPanel");
+            const title = document.getElementById("detailTitle");
+            const subtitle = document.getElementById("detailSubtitle");
+            const body = document.getElementById("detailBody");
+
+            const item = getSelectedItem();
+            if (!item) {
+                panel.classList.add("hidden");
+                return;
+            }
+
+            const stt = getValue(item, ["stt", "STT"], "");
+            const mst = getValue(item, ["mst", "Mã số thuế", "maSoThue"]);
+            const mst2 = getValue(item, ["mst2", "Mã số thuế 2", "maSoThue2"]);
+            const tenDN = getValue(item, ["tenDN", "Tên doanh nghiệp", "tenDoanhNghiep"]);
+            const maTinh = getValue(item, ["maTinh", "Mã tỉnh"]);
+            const maXa = getValue(item, ["maXa", "Mã xã"]);
+            const diaChi = getValue(item, ["diaChi", "Địa chỉ"], "Chưa có");
+            const dienThoai = getPhoneValue(item, ["dienThoai", "Dienthoai", "Điện thoại"], "Chưa có");
+            const email = getValue(item, ["email", "Email"], "Chưa có");
+            const maNganh = getValue(item, ["maNganh", "Mã ngành"], "Chưa có");
+            const loaiHinhDN = getValue(item, ["loaiHinhDN", "Loại hình DN"], "Chưa có");
+            const tinhTrangHD = getValue(item, ["tinhTrangHD", "Tình trạng HĐ"], "Chưa có");
+            const dtvPhuTrach = getValue(item, ["dtvPhuTrach", "ĐTV phụ trách"], "Chưa có");
+            const enterpriseNotes = getValue(item, ["notes", "Notes", "noteRieng"], "");
+            const notesValue = enterpriseNotes === "—" ? "" : enterpriseNotes;
+
+            const nguoiCungCapHoTen = getValue(item, ["nguoiCungCapHoTen", "hoTenNguoiCungCap", "Họ tên người cung cấp"], "Chưa có");
+            const nguoiCungCapDienThoai = getPhoneValue(item, ["nguoiCungCapDienThoai", "dienThoaiNguoiCungCap", "Điện thoại người cung cấp"], "Chưa có");
+            const nguoiCungCapEmail = getValue(item, ["nguoiCungCapEmail", "emailNguoiCungCap", "Email người cung cấp"], "Chưa có");
+
+            const quickContactText = [
+                tenDN !== "Chưa có" ? `Tên doanh nghiệp: ${tenDN}` : "",
+                diaChi !== "Chưa có" ? `Địa chỉ: ${diaChi}` : "",
+                dienThoai !== "Chưa có" ? `Điện thoại DN: ${dienThoai}` : "",
+                email !== "Chưa có" ? `Email DN: ${email}` : "",
+                nguoiCungCapHoTen !== "Chưa có" ? `Người cung cấp: ${nguoiCungCapHoTen}` : "",
+                nguoiCungCapDienThoai !== "Chưa có" ? `SĐT người cung cấp: ${nguoiCungCapDienThoai}` : "",
+                nguoiCungCapEmail !== "Chưa có" ? `Email người cung cấp: ${nguoiCungCapEmail}` : ""
+            ].filter(Boolean).join("\n");
+
+            const mailSubject = buildMailSubject(tenDN, mst);
+            const mailBody = buildMailBody(item);
+
+            title.textContent = tenDN;
+            subtitle.textContent = `STT: ${stt || "--"} | MST: ${mst}`;
+
+            body.innerHTML = `
+                <div class="mb-5 p-4 rounded-xl bg-blue-50 border border-blue-100">
+                    <div class="text-sm font-bold text-blue-900 mb-3">Liên hệ nhanh</div>
+                    <div class="flex flex-wrap gap-2">
+                        ${renderActionButton("Địa chỉ", diaChi !== "Chưa có" ? diaChi : "")}
+                        ${renderActionButton("SĐT DN", dienThoai !== "Chưa có" ? dienThoai : "")}
+                        ${renderActionButton("Email DN", email !== "Chưa có" ? email : "")}
+                        ${renderActionButton("Người cung cấp", nguoiCungCapHoTen !== "Chưa có" ? nguoiCungCapHoTen : "")}
+                        ${renderActionButton("SĐT người cung cấp", nguoiCungCapDienThoai !== "Chưa có" ? nguoiCungCapDienThoai : "")}
+                        ${renderActionButton("Email người cung cấp", nguoiCungCapEmail !== "Chưa có" ? nguoiCungCapEmail : "")}
+                        ${quickContactText ? renderActionButton("Toàn bộ thông tin liên hệ", quickContactText) : ""}
+                    </div>
+                </div>
+
+                <div class="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-sm font-bold text-amber-900">Notes riêng cho doanh nghiệp</div>
+                            <div class="text-xs text-amber-700 mt-1">Thông tin này sẽ được lưu lại vào database.</div>
+                        </div>
+                        <button
+                            type="button"
+                            onclick="saveEnterpriseNotes(${item.rowIndex})"
+                            class="px-4 py-2 rounded-lg bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 transition-colors"
+                        >
+                            Lưu notes
+                        </button>
+                    </div>
+
+                    <textarea
+                        id="enterpriseNotesInput"
+                        class="w-full min-h-[140px] rounded-lg border border-amber-300 bg-white p-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                        placeholder="Nhập notes riêng cho doanh nghiệp này..."
+                    >${escapeHtml(notesValue)}</textarea>
+                </div>
+
+                <div class="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <div class="text-sm font-bold text-slate-900 mb-3">Trạng thái hiện tại</div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                        <div class="bg-white border rounded-lg p-3"><b>Đã liên hệ:</b> ${item.daLienHe ? "Có" : "Chưa"}</div>
+                        <div class="bg-white border rounded-lg p-3"><b>Chưa liên hệ được:</b> ${item.chuaLienHeDuoc ? "Có" : "Không"}</div>
+                        <div class="bg-white border rounded-lg p-3"><b>Đã điền:</b> ${item.daDien ? "Có" : "Chưa"}</div>
+                        <div class="bg-white border rounded-lg p-3"><b>Đã check:</b> ${item.daCheck ? "Có" : "Chưa"}</div>
+                    </div>
+                </div>
+
+                <div class="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-3">
+                        <div>
+                            <div class="text-sm font-bold text-amber-900">Mẫu mail sẵn cho doanh nghiệp đang chọn</div>
+                            <div class="text-xs text-amber-700 mt-1">Đã tự thay tên cán bộ thành <b>Nguyễn Đăng Minh</b> và số điện thoại <b>0819482550</b>.</div>
+                        </div>
+                        ${renderMailButtons(mailSubject, mailBody, email)}
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div class="bg-white border border-amber-200 rounded-lg p-4">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Tiêu đề mail</div>
+                                ${copyButton(mailSubject, "Subject mail")}
+                            </div>
+                            <div class="text-sm text-gray-900 mail-preview-box">${escapeHtml(mailSubject)}</div>
+                        </div>
+
+                        <div class="bg-white border border-amber-200 rounded-lg p-4 lg:col-span-2">
+                            <div class="flex items-center justify-between gap-3 mb-2">
+                                <div class="text-xs uppercase tracking-wider text-gray-500 font-semibold">Nội dung mail</div>
+                                ${copyButton(mailBody, "Body mail")}
+                            </div>
+                            <div class="text-sm text-gray-900 mail-preview-box">${escapeHtml(mailBody)}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${renderField("Mã số thuế", mst)}
+                    ${renderField("Mã số thuế 2", mst2)}
+                    ${renderField("Tên doanh nghiệp", tenDN)}
+                    ${renderField("Mã tỉnh", maTinh)}
+                    ${renderField("Mã xã", maXa)}
+                    ${renderField("Địa chỉ", diaChi, true)}
+                    ${renderField("Điện thoại", dienThoai)}
+                    ${renderField("Email", email)}
+                    ${renderField("Mã ngành", maNganh)}
+                    ${renderField("Loại hình DN", loaiHinhDN)}
+                    ${renderField("Tình trạng HĐ", tinhTrangHD)}
+                    ${renderField("ĐTV phụ trách", dtvPhuTrach)}
+                </div>
+
+                <div class="mt-6">
+                    <div class="text-sm font-bold text-gray-800 mb-3">Người cung cấp thông tin</div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${renderField("Họ tên", nguoiCungCapHoTen)}
+                        ${renderField("Điện thoại", nguoiCungCapDienThoai)}
+                        ${renderField("Email", nguoiCungCapEmail)}
+                    </div>
+                </div>
+            `;
+            panel.classList.remove("hidden");
+        }
+
+        async function saveEnterpriseNotes(rowIndex) {
+            const textarea = document.getElementById("enterpriseNotesInput");
+            if (!textarea) return;
+
+            const notes = textarea.value.trim();
+            const loadingIcon = spinnerIcon();
+            const successIcon = successSvg();
+            const errorIcon = errorSvg();
+
+            showToast("Đang lưu notes...", "bg-gray-800", loadingIcon);
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: "updateNotes",
+                        rowIndex: rowIndex,
+                        notes: notes
+                    })
+                });
+
+                const result = await response.json();
+                if (result.error) {
+                    showToast("Lỗi: " + result.error, "bg-red-600", errorIcon);
+                    return;
+                }
+
+                const target = allData.find(x => Number(x.rowIndex) === Number(rowIndex));
+                if (target) target.notes = notes;
+                applyFilters();
+                showToast("Đã lưu notes thành công!", "bg-emerald-600", successIcon);
+            } catch (err) {
+                console.error(err);
+                showToast("Lỗi mạng/CORS khi lưu notes!", "bg-red-600", errorIcon);
+            }
+        }
+
+        async function handleCheck(checkboxElem, rowIndex, type) {
+            let isChecked = checkboxElem.checked;
+            const loadingIcon = spinnerIcon();
+            const successIcon = successSvg();
+            const errorIcon = errorSvg();
+
+            const item = allData.find(x => Number(x.rowIndex) === Number(rowIndex));
+            if (!item) return;
+
+            if (type === "chuaLienHeDuoc" && item.daLienHe) {
+                checkboxElem.checked = false;
+                showToast("Đã liên hệ rồi nên không thể tích 'chưa liên hệ được'.", "bg-red-600", errorIcon);
+                return;
+            }
+
+            showToast("Đang đồng bộ API...", "bg-gray-800", loadingIcon);
+            checkboxElem.disabled = true;
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        action: "updateCheckbox",
+                        rowIndex: rowIndex,
+                        type: type,
+                        isChecked: isChecked
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    showToast("Lỗi: " + result.error, "bg-red-600", errorIcon);
+                    checkboxElem.checked = !isChecked;
+                    return;
+                }
+
+                if (type === "lienHe") {
+                    item.daLienHe = isChecked;
+                    if (isChecked) {
+                        item.chuaLienHeDuoc = false;
+                    }
+                } else if (type === "chuaLienHeDuoc") {
+                    item.chuaLienHeDuoc = isChecked;
+                } else if (type === "dien") {
+                    item.daDien = isChecked;
+                } else if (type === "check") {
+                    item.daCheck = isChecked;
+                }
+
+                applyFilters();
+                showToast("Đã lưu thành công!", "bg-emerald-600", successIcon);
+            } catch (err) {
+                checkboxElem.checked = !isChecked;
+                showToast("Lỗi mạng/CORS. Không kết nối được API!", "bg-red-600", errorIcon);
+                console.error(err);
+            } finally {
+                checkboxElem.disabled = false;
+            }
+        }
+
+        async function copyText(text, label = "nội dung") {
+            try {
+                await navigator.clipboard.writeText(String(text));
+                showToast(`Đã copy ${label}!`, "bg-emerald-600", successSvg());
+            } catch (err) {
+                showToast(`Không copy được ${label}.`, "bg-red-600", errorSvg());
+            }
+        }
+
+        function spinnerIcon() {
+            return `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>`;
+        }
+
+        function successSvg() {
+            return `<svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`;
+        }
+
+        function errorSvg() {
+            return `<svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+        }
+
+        let toastTimeout;
+        function showToast(msg, colorClass, iconHtml = "") {
+            const toast = document.getElementById("toastStatus");
+            const textEl = document.getElementById("toastText");
+            const iconEl = document.getElementById("toastIcon");
+
+            textEl.textContent = msg;
+            iconEl.innerHTML = iconHtml;
+
+            toast.className = `fixed bottom-6 right-6 text-white px-4 py-3 rounded-lg shadow-xl text-sm font-medium transition-all duration-300 z-50 flex items-center gap-2 border border-black/10 transform translate-y-0 ${colorClass}`;
+            toast.classList.remove("opacity-0", "translate-y-2");
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-2");
+            }, 2500);
+        }
+
+        function showError(err) {
+            document.getElementById("loading").innerHTML = `
+                <div class="text-red-500 mb-2">
+                    <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-red-600 font-medium text-center text-lg">Lỗi tải dữ liệu API:<br>${err}</p>
+                <button onclick="location.reload()" class="mt-6 px-5 py-2.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors text-sm font-semibold shadow-sm">Thử Tải Lại Trang</button>
+            `;
+        }
+    </script>
+</body>
+</html>
